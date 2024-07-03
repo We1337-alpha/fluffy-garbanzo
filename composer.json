@@ -1,0 +1,14 @@
+{
+    "name": "we1337/fluffy-garbanzo",
+    "autoload": {
+        "psr-4": {
+            "We1337\\FluffyGarbanzo\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "We1337"
+        }
+    ],
+    "require": {}
+}
