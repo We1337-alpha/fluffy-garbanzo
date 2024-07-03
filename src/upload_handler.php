@@ -1,12 +1,15 @@
 <?php
+
+require 'config.php';
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 echo "PHP is running as user: " . exec('whoami') . "<br>";
 
-$ftp_server = "localhost";
-$ftp_username = "";
-$ftp_password = "";
+$ftp_server = FTP_HOST;
+$ftp_username = FTP_USER;
+$ftp_password = FTP_PASS;
 
 $target_dir = "/home/we1337/files/";
 $target_file = $target_dir . basename($_FILES["fileToUpload"]["name"]);
@@ -56,12 +59,41 @@ if (ftp_put($conn_id, $home_upload, $_FILES["fileToUpload"]["tmp_name"], FTP_BIN
     echo "Failed to upload to home directory<br>";
 }
 
+// File upload to target directory
 if (ftp_put($conn_id, $target_file, $_FILES["fileToUpload"]["tmp_name"], FTP_BINARY)) {
-    echo "The file ". basename($_FILES["fileToUpload"]["name"]). " has been uploaded.<br>";
+    echo "The file " . basename($_FILES["fileToUpload"]["name"]) . " has been uploaded.<br>";
+
+    // Insert file details into MySQL database
+    $filename = basename($_FILES["fileToUpload"]["name"]);
+    $size = $_FILES["fileToUpload"]["size"];
+    $type = $_FILES["fileToUpload"]["type"];
+
+    // Establish database connection (assuming PDO)
+    try {
+        $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        // Prepare SQL statement
+        $stmt = $pdo->prepare("INSERT INTO uploaded_files (filename, size, type) VALUES (:filename, :size, :type)");
+        
+        // Bind parameters
+        $stmt->bindParam(':filename', $filename);
+        $stmt->bindParam(':size', $size);
+        $stmt->bindParam(':type', $type);
+
+        // Execute the statement
+        $stmt->execute();
+
+        echo "File details inserted into database successfully.<br>";
+    } catch (PDOException $e) {
+        die("Error: " . $e->getMessage());
+    }
 } else {
     echo "Sorry, there was an error uploading your file.<br>";
     echo "FTP Error: " . error_get_last()['message'] . "<br>";
 }
 
+// Close FTP connection
 ftp_close($conn_id);
+
 ?>
